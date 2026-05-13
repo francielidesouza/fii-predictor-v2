@@ -1,0 +1,208 @@
+{
+  "versao": "1.0-rf-gb-por-segmento",
+  "algoritmos": [
+    "Random Forest",
+    "Gradient Boosting"
+  ],
+  "tipo_fundo": "Tijolo",
+  "segmentos": [
+    "Escritorios",
+    "Hibrido",
+    "Logistico",
+    "Shoppings"
+  ],
+  "periodo_treino": "jan/2019–dez/2024",
+  "r2_medio": -35.2984,
+  "n_fundos_total": 43,
+  "modelos_por_segmento": {
+    "Escritorios": {
+      "n_fundos": 11,
+      "num_cols": [
+        "DY_lag1",
+        "DY_lag2",
+        "DY_lag3",
+        "PVP_lag1",
+        "SELIC"
+      ],
+      "cat_cols": [],
+      "melhor": "Random Forest",
+      "metricas": {
+        "Random Forest": {
+          "r2": 0.0916,
+          "mae": 0.0016,
+          "rmse": 0.0057,
+          "mape": 501.9642,
+          "cv_r2": 0.2835
+        },
+        "Gradient Boosting": {
+          "r2": 0.037,
+          "mae": 0.0022,
+          "rmse": 0.0059,
+          "mape": 660.1467,
+          "cv_r2": -1.2115
+        }
+      },
+      "sem_pandemia": {
+        "melhor": "Gradient Boosting",
+        "metricas": {
+          "Random Forest": {
+            "r2": 0.0684,
+            "mae": 0.0017,
+            "rmse": 0.0062,
+            "mape": 581.4929,
+            "cv_r2": 0.3607
+          },
+          "Gradient Boosting": {
+            "r2": 0.069,
+            "mae": 0.0017,
+            "rmse": 0.0062,
+            "mape": 588.6233,
+            "cv_r2": -0.6073
+          }
+        }
+      }
+    },
+    "Hibrido": {
+      "n_fundos": 7,
+      "num_cols": [
+        "DY_lag1",
+        "DY_lag2",
+        "DY_lag3",
+        "PVP_lag1",
+        "SELIC"
+      ],
+      "cat_cols": [],
+      "melhor": "Random Forest",
+      "metricas": {
+        "Random Forest": {
+          "r2": 0.0435,
+          "mae": 0.002,
+          "rmse": 0.0046,
+          "mape": 58.6958,
+          "cv_r2": -0.4969
+        },
+        "Gradient Boosting": {
+          "r2": -0.1079,
+          "mae": 0.0023,
+          "rmse": 0.0049,
+          "mape": 59.7252,
+          "cv_r2": -0.8594
+        }
+      },
+      "sem_pandemia": {
+        "melhor": "Random Forest",
+        "metricas": {
+          "Random Forest": {
+            "r2": -0.0203,
+            "mae": 0.0021,
+            "rmse": 0.005,
+            "mape": 61.5853,
+            "cv_r2": -0.6128
+          },
+          "Gradient Boosting": {
+            "r2": -0.0523,
+            "mae": 0.0024,
+            "rmse": 0.0051,
+            "mape": 64.7712,
+            "cv_r2": -1.1069
+          }
+        }
+      }
+    },
+    "Logistico": {
+      "n_fundos": 10,
+      "num_cols": [
+        "DY_lag1",
+        "DY_lag2",
+        "DY_lag3",
+        "PVP_lag1",
+        "SELIC"
+      ],
+      "cat_cols": [],
+      "melhor": "Random Forest",
+      "metricas": {
+        "Random Forest": {
+          "r2": 0.5452,
+          "mae": 0.0007,
+          "rmse": 0.0013,
+          "mape": 26.2039,
+          "cv_r2": -0.0554
+        },
+        "Gradient Boosting": {
+          "r2": 0.48,
+          "mae": 0.0008,
+          "rmse": 0.0014,
+          "mape": 30.0141,
+          "cv_r2": -0.4751
+        }
+      },
+      "sem_pandemia": {
+        "melhor": "Random Forest",
+        "metricas": {
+          "Random Forest": {
+            "r2": 0.529,
+            "mae": 0.0008,
+            "rmse": 0.0014,
+            "mape": 29.9883,
+            "cv_r2": -0.0802
+          },
+          "Gradient Boosting": {
+            "r2": 0.4978,
+            "mae": 0.0008,
+            "rmse": 0.0014,
+            "mape": 32.9001,
+            "cv_r2": -0.4505
+          }
+        }
+      }
+    },
+    "Shoppings": {
+      "n_fundos": 15,
+      "num_cols": [
+        "DY_lag1",
+        "DY_lag2",
+        "DY_lag3",
+        "PVP_lag1",
+        "SELIC"
+      ],
+      "cat_cols": [],
+      "melhor": "Random Forest",
+      "metricas": {
+        "Random Forest": {
+          "r2": -141.874,
+          "mae": 0.0062,
+          "rmse": 0.0332,
+          "mape": 146.7529,
+          "cv_r2": -89.6075
+        },
+        "Gradient Boosting": {
+          "r2": -2437.6468,
+          "mae": 0.0249,
+          "rmse": 0.137,
+          "mape": 452.7368,
+          "cv_r2": -288.5227
+        }
+      },
+      "sem_pandemia": {
+        "melhor": "Random Forest",
+        "metricas": {
+          "Random Forest": {
+            "r2": -149.2384,
+            "mae": 0.0086,
+            "rmse": 0.0348,
+            "mape": 263.8733,
+            "cv_r2": -405.3323
+          },
+          "Gradient Boosting": {
+            "r2": -312.236,
+            "mae": 0.0166,
+            "rmse": 0.0503,
+            "mape": 357.8613,
+            "cv_r2": -1303.6701
+          }
+        }
+      }
+    }
+  },
+  "dataset": "dataset_fiis_2019_2025.xlsx"
+}
