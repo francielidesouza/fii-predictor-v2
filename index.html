@@ -61,10 +61,6 @@ body{
 }
 .dot{width:6px;height:6px;border-radius:50%;background:#ccc}
 .dot.on{background:#22C55E}.dot.off{background:#EF4444}
-.selic-bar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--amber-light);border:1px solid #E0C060;border-radius:var(--radius-sm);margin-bottom:1rem;font-size:12px;color:var(--amber)}
-.selic-val{font-weight:700;font-family:'DM Mono',monospace;font-size:14px}
-.selic-imp{display:flex;gap:4px;margin-left:auto;align-items:center;font-size:11px}
-.selic-dot{width:8px;height:8px;border-radius:50%;background:var(--amber)}
 
 /* Card */
 .card{
@@ -296,17 +292,6 @@ footer{
     </div>
   </div>
 
-  <!-- Barra SELIC -->
-  <div class="selic-bar">
-    <span>📊 SELIC atual:</span>
-    <span class="selic-val" id="selicVal">carregando...</span>
-    <span style="color:var(--text3)">a.a.</span>
-    <span class="selic-imp">
-      <span class="selic-dot"></span>
-      <span>Principal variável macro do modelo — influência direta nas previsões</span>
-    </span>
-  </div>
-
   <!-- Formulário -->
   <div class="card">
     <div class="card-title">Configuração da Previsão</div>
@@ -497,7 +482,7 @@ footer{
 </div>
 
 <script>
-const API    = 'https://fii-predictor-v2.onrender.com';
+const API    = 'https://fii-predictor.onrender.com';
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 const CORES_SEG = [
@@ -605,7 +590,25 @@ const REAL_2024 = {
   "EDGA11":[0.004467,0.002282,0.000228,0.000409,0.000525,0.00051,0.000497,0.000967,0.00119,0.000947,0.001469,0.001577],
 };
 
-// ── Estado global ─────────────────────────────────────────────────────────────
+// ── SELIC mensal 2024–2025 (BCB SGS 4390 — % a.m.) ──────────────────────────
+const SELIC_MENSAL = {
+  // 2024
+  '2024-01':0.0087,'2024-02':0.0083,'2024-03':0.0083,'2024-04':0.0083,
+  '2024-05':0.0083,'2024-06':0.0083,'2024-07':0.0086,'2024-08':0.0086,
+  '2024-09':0.0086,'2024-10':0.0092,'2024-11':0.0092,'2024-12':0.0097,
+  // 2025 (estimado com base na trajetória BCB)
+  '2025-01':0.0104,'2025-02':0.0104,'2025-03':0.0107,'2025-04':0.0107,
+  '2025-05':0.0110,'2025-06':0.0110,'2025-07':0.0110,'2025-08':0.0110,
+  '2025-09':0.0110,'2025-10':0.0110,'2025-11':0.0110,'2025-12':0.0110,
+};
+// Converte para % a.m. para exibição
+const SELIC_2024_PCT = Object.entries(SELIC_MENSAL)
+  .filter(([k])=>k.startsWith('2024'))
+  .map(([,v])=>+(v*100).toFixed(3));
+const SELIC_2025_PCT = (n) => Array.from({length:n},(_,i)=>{
+  const m = String(i+1).padStart(2,'0');
+  return +((SELIC_MENSAL[`2025-${m}`]||0.011)*100).toFixed(3);
+});
 let apiFundos = {}, apiMeta = {};
 let vsChartInst = null, segChartInst = null;
 let histChartInst = null, erroChartInst = null;
@@ -624,7 +627,6 @@ async function initApi(){
       const selic = apiMeta?.segmentos?.Logistico?.metricas?.['Random Forest']?.mae
         ? 0.0108 : 0.0108;
       updateSelicBar(selic);
-      document.getElementById('selicVal').textContent = '13,25%';
       const rf = await fetch(API+'/fundos', {signal: AbortSignal.timeout(10000)});
       if(rf.ok){
         const lista = await rf.json();
@@ -664,10 +666,6 @@ function onSiglaChange(){
   preencherFundo(document.getElementById('sigla').value);
 }
 
-function updateSelicBar(selic){
-  const el = document.getElementById('selicVal');
-  if(el && selic) el.textContent = (selic * 100 * 12).toFixed(2) + '%';
-}
 
 onSegChange();
 initApi();
@@ -853,7 +851,15 @@ function renderHistChart(sig, serieRF, serieGB, hz){
           label:'',
           data: Array(12+hz).fill(null).map((_,i)=> i===11 ? ultReal : null),
           borderColor:'rgba(0,0,0,0.15)', borderWidth:1,
-          borderDash:[4,4], pointRadius:0, fill:false,
+          borderDash:[4,4], pointRadius:0, fill:false, yAxisID:'y',
+        },
+        // SELIC mensal 2024 + 2025 (eixo direito)
+        {
+          label:'SELIC % a.m.',
+          data: [...SELIC_2024_PCT, ...SELIC_2025_PCT(hz)],
+          borderColor:'#E05000', backgroundColor:'transparent',
+          borderWidth:1.5, borderDash:[2,3], pointRadius:2,
+          tension:0.2, fill:false, yAxisID:'y2',
         }
       ]
     },
@@ -863,8 +869,11 @@ function renderHistChart(sig, serieRF, serieGB, hz){
       plugins:{
         legend:{labels:{font:{size:11}, filter: i => i.text !== ''}},
         tooltip:{callbacks:{
-          label: c => c.dataset.label && c.parsed.y!=null
-            ? `${c.dataset.label}: ${c.parsed.y.toFixed(2)}% a.m.` : null,
+          label: c => {
+            if(!c.dataset.label || c.parsed.y==null) return null;
+            const suf = c.dataset.yAxisID==='y2' ? '% a.m. (SELIC)' : '% a.m.';
+            return `${c.dataset.label}: ${c.parsed.y.toFixed(3)}${suf}`;
+          },
           afterBody: items => {
             const lbl = items[0]?.label || '';
             return lbl.includes('/24') ? [] : ['← transição histórico → projeção'];
@@ -874,8 +883,15 @@ function renderHistChart(sig, serieRF, serieGB, hz){
       scales:{
         x:{ticks:{font:{size:10}}},
         y:{
+          position:'left',
           ticks:{font:{size:11}, callback:v=>v.toFixed(2)+'%'},
           title:{display:true, text:'DY % a.m.', font:{size:11}}
+        },
+        y2:{
+          position:'right',
+          ticks:{font:{size:10}, callback:v=>v.toFixed(3)+'%', color:'#E05000'},
+          title:{display:true, text:'SELIC % a.m.', font:{size:10}, color:'#E05000'},
+          grid:{drawOnChartArea:false},
         }
       }
     }
@@ -989,10 +1005,18 @@ function renderVsChart(sig, serieRF, serieGB, hz){
         borderWidth:2, borderDash:[6,4], pointRadius:3, tension:0.4,
       },
       {
-        label:'Gradient Boosting (GB)',
+        label:'GB — Gradient Boosting',
         data: prevGB,
         borderColor:'#7A2080', backgroundColor:'transparent',
         borderWidth:2, borderDash:[3,3], pointRadius:3, tension:0.4,
+      },
+      // SELIC no período (eixo direito)
+      {
+        label:'SELIC % a.m.',
+        data: SELIC_2025_PCT(hz),
+        borderColor:'#E05000', backgroundColor:'transparent',
+        borderWidth:1.5, borderDash:[2,3], pointRadius:2,
+        tension:0.2, yAxisID:'y2',
       },
     ]},
     options:{
@@ -1000,13 +1024,24 @@ function renderVsChart(sig, serieRF, serieGB, hz){
       interaction:{mode:'index', intersect:false},
       plugins:{
         legend:{labels:{font:{size:11}, usePointStyle:true}},
-        tooltip:{callbacks:{label: c => `${c.dataset.label}: ${c.parsed.y!=null?c.parsed.y.toFixed(2)+'% a.m.':'—'}`}}
+        tooltip:{callbacks:{label: c => {
+          if(!c.dataset.label || c.parsed.y==null) return null;
+          const suf = c.dataset.yAxisID==='y2' ? '% a.m. (SELIC)' : '% a.m.';
+          return `${c.dataset.label}: ${c.parsed.y.toFixed(c.dataset.yAxisID==='y2'?3:2)}${suf}`;
+        }}}
       },
       scales:{
         x:{ticks:{font:{size:11}}},
         y:{
+          position:'left',
           ticks:{font:{size:11}, callback: v => v.toFixed(2)+'%'},
           title:{display:true, text:'DY % a.m.', font:{size:11}}
+        },
+        y2:{
+          position:'right',
+          ticks:{font:{size:10}, callback:v=>v.toFixed(3)+'%', color:'#E05000'},
+          title:{display:true, text:'SELIC % a.m.', font:{size:10}, color:'#E05000'},
+          grid:{drawOnChartArea:false},
         }
       }
     }
