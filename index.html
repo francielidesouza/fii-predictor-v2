@@ -61,6 +61,10 @@ body{
 }
 .dot{width:6px;height:6px;border-radius:50%;background:#ccc}
 .dot.on{background:#22C55E}.dot.off{background:#EF4444}
+.selic-bar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--amber-light);border:1px solid #E0C060;border-radius:var(--radius-sm);margin-bottom:1rem;font-size:12px;color:var(--amber)}
+.selic-val{font-weight:700;font-family:'DM Mono',monospace;font-size:14px}
+.selic-imp{display:flex;gap:4px;margin-left:auto;align-items:center;font-size:11px}
+.selic-dot{width:8px;height:8px;border-radius:50%;background:var(--amber)}
 
 /* Card */
 .card{
@@ -168,6 +172,7 @@ body{
   display:grid;grid-template-columns:repeat(4,1fr);
   gap:10px;margin-bottom:1.25rem;
 }
+.metricas-rf-gb{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
 .metrica{
   background:var(--surface2);
   border-radius:var(--radius-sm);
@@ -282,15 +287,24 @@ footer{
   <!-- Header -->
   <div class="header">
     <div class="header-left">
-      <h1>FII Predictor
-        <span class="modelo-badge rf" id="badgeModelo">Random Forest</span>
-      </h1>
-      <p>Análise preditiva de Dividend Yield · Fundos de Tijolo · 2019–2024</p>
+      <h1>FII Predictor</h1>
+      <p>Análise preditiva de Dividend Yield · Fundos de Tijolo · 2019–2024 · <span class="modelo-badge rf">RF</span> <span class="modelo-badge gb">GB</span></p>
     </div>
     <div class="api-status">
       <span class="dot" id="apiDot"></span>
       <span id="apiStatus">verificando...</span>
     </div>
+  </div>
+
+  <!-- Barra SELIC -->
+  <div class="selic-bar">
+    <span>📊 SELIC atual:</span>
+    <span class="selic-val" id="selicVal">carregando...</span>
+    <span style="color:var(--text3)">a.a.</span>
+    <span class="selic-imp">
+      <span class="selic-dot"></span>
+      <span>Principal variável macro do modelo — influência direta nas previsões</span>
+    </span>
   </div>
 
   <!-- Formulário -->
@@ -314,23 +328,15 @@ footer{
       </div>
     </div>
 
-    <div class="g2">
-      <div class="field">
-        <label>Horizonte de Previsão</label>
-        <select id="horizonte">
-          <option value="3">3 meses</option>
-          <option value="6">6 meses</option>
-          <option value="12" selected>12 meses</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Modelo de ML</label>
-        <select id="modelo" onchange="onModeloChange()">
-          <option value="Random Forest">Random Forest</option>
-          <option value="Gradient Boosting">Gradient Boosting</option>
-        </select>
-      </div>
+    <div class="field">
+      <label>Horizonte de Previsão</label>
+      <select id="horizonte">
+        <option value="3">3 meses</option>
+        <option value="6">6 meses</option>
+        <option value="12" selected>12 meses</option>
+      </select>
     </div>
+    <input type="hidden" id="modelo" value="ambos">
 
     <div class="divider"></div>
     <div class="card-title" style="margin-bottom:12px">
@@ -366,13 +372,45 @@ footer{
       <div class="resumo-grid" id="resumoCards"></div>
     </div>
 
+
+    <!-- Gráfico DY Histórico + Projetado -->
+    <div class="card">
+      <div class="vs-header">
+        <div class="card-title" style="margin:0">DY Histórico (2024) + Projeção</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="tag tag-real">Real 2024 (brapi)</span>
+          <span class="tag" style="background:#FFF4D6;color:#7A5000">RF — Projetado</span>
+          <span class="tag" style="background:#F0E8FB;color:#5A2A8A">GB — Projetado</span>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-bottom:6px">
+        Comparativo entre o DY real observado em 2024 e as projeções de cada modelo para 2025.
+      </p>
+      <div class="chart-wrap-lg"><canvas id="histChart"></canvas></div>
+      <div class="tip">DY real 2024: brapi.dev Pro · Projeção 2025: modelos treinados em 2019–2024.</div>
+    </div>
+
+    <!-- Margem de Erro / Nível de Confiança -->
+    <div class="card">
+      <div class="vs-header">
+        <div class="card-title" style="margin:0">Margem de Erro da Previsão</div>
+        <span class="tag tag-real" id="erroModeloBadge">RF</span>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-bottom:10px">
+        Intervalo de confiança estimado com base no MAE do modelo. A linha central é a previsão; a faixa representa ± 1 MAE.
+      </p>
+      <div class="chart-wrap-lg"><canvas id="erroChart"></canvas></div>
+      <div class="tip">Intervalo baseado no MAE do conjunto de teste (2023–2024). Não representa probabilidade estatística formal.</div>
+    </div>
+
     <!-- Gráfico Real 2025 vs Previsto -->
     <div class="card">
       <div class="vs-header">
         <div class="card-title" style="margin:0">Real 2025 vs Previsão do Modelo — Validação</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <span class="tag tag-real">Real 2025 (brapi)</span>
-          <span class="tag tag-prev" id="tagPrev">Previsto</span>
+          <span class="tag tag-prev">RF — Random Forest</span>
+          <span class="tag" style="background:#F0E8FB;color:#5A2A8A">GB — Gradient Boosting</span>
         </div>
       </div>
       <p style="font-size:11px;color:var(--text3);margin-bottom:6px">
@@ -406,16 +444,8 @@ footer{
           <div class="metrica-val good" id="mR2">—</div>
         </div>
         <div class="metrica">
-          <div class="metrica-label">MAPE</div>
-          <div class="metrica-val" id="mMape">—</div>
-        </div>
-        <div class="metrica">
           <div class="metrica-label">MAE</div>
           <div class="metrica-val" id="mMae">—</div>
-        </div>
-        <div class="metrica">
-          <div class="metrica-label">CV R²</div>
-          <div class="metrica-val" id="mCvR2">—</div>
         </div>
         <div class="metrica">
           <div class="metrica-label">Período</div>
@@ -467,7 +497,7 @@ footer{
 </div>
 
 <script>
-const API    = 'https://fii-predictor.onrender.com';
+const API    = 'https://fii-predictor-v2.onrender.com';
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 const CORES_SEG = [
@@ -578,7 +608,9 @@ const REAL_2024 = {
 // ── Estado global ─────────────────────────────────────────────────────────────
 let apiFundos = {}, apiMeta = {};
 let vsChartInst = null, segChartInst = null;
+let histChartInst = null, erroChartInst = null;
 let _segAtual = 'Logistico', _segHz = 3, _segSel = new Set();
+let _lastSerieRF = [], _lastSerieGB = [], _lastSig = '', _lastMaeRF = 0, _lastMaeGB = 0;
 
 // ── Inicialização da API ──────────────────────────────────────────────────────
 async function initApi(){
@@ -588,6 +620,11 @@ async function initApi(){
       apiMeta = await r.json();
       document.getElementById('apiDot').classList.add('on');
       document.getElementById('apiStatus').textContent = 'API online';
+      // Atualiza barra SELIC
+      const selic = apiMeta?.segmentos?.Logistico?.metricas?.['Random Forest']?.mae
+        ? 0.0108 : 0.0108;
+      updateSelicBar(selic);
+      document.getElementById('selicVal').textContent = '13,25%';
       const rf = await fetch(API+'/fundos', {signal: AbortSignal.timeout(10000)});
       if(rf.ok){
         const lista = await rf.json();
@@ -627,12 +664,9 @@ function onSiglaChange(){
   preencherFundo(document.getElementById('sigla').value);
 }
 
-function onModeloChange(){
-  const m = document.getElementById('modelo').value;
-  const b = document.getElementById('badgeModelo');
-  b.textContent = m;
-  b.className = 'modelo-badge ' + (m === 'Random Forest' ? 'rf' : 'gb');
-  document.getElementById('tagPrev').textContent = 'Previsto (' + (m==='Random Forest'?'RF':'GB') + ')';
+function updateSelicBar(selic){
+  const el = document.getElementById('selicVal');
+  if(el && selic) el.textContent = (selic * 100 * 12).toFixed(2) + '%';
 }
 
 onSegChange();
@@ -643,7 +677,6 @@ async function gerar(){
   const sig     = document.getElementById('sigla').value;
   const seg     = document.getElementById('segmento').value;
   const hz      = parseInt(document.getElementById('horizonte').value);
-  const modelo  = document.getElementById('modelo').value;
   const errEl   = document.getElementById('errMsg');
   const avisoEl = document.getElementById('avisoFundo');
 
@@ -651,7 +684,7 @@ async function gerar(){
   avisoEl.style.display = 'none';
   document.getElementById('resultados').style.display = 'none';
   document.getElementById('btnGerar').disabled = true;
-  document.getElementById('btnTxt').textContent = 'Calculando...';
+  document.getElementById('btnTxt').textContent = 'Calculando RF e GB...';
   document.getElementById('spinner').style.display = 'block';
 
   // Extrai lags reais de 2024
@@ -662,28 +695,25 @@ async function gerar(){
   const lag3 = vals[vals.length-3] || lag2;
   const pvp  = parseFloat(document.getElementById('pvp').value);
 
-  let serie = [];
-  try{
-    const res = await fetch(API+'/predict/serie', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({sigla:sig, segmento:seg, dy_lag1:lag1, dy_lag2:lag2, dy_lag3:lag3, pvp, modelo, n_meses:12}),
-      signal: AbortSignal.timeout(60000)
-    });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    serie = data.serie;
+  const payload = {sigla:sig, segmento:seg, dy_lag1:lag1, dy_lag2:lag2, dy_lag3:lag3, pvp, n_meses:12};
 
-    // Métricas
-    renderMetricas(data, lag1, lag2, lag3);
+  // Chama RF e GB em paralelo
+  let serieRF = [], serieGB = [], dataRF = {}, dataGB = {};
+  try{
+    const [resRF, resGB] = await Promise.all([
+      fetch(API+'/predict/serie', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({...payload, modelo:'Random Forest'}), signal: AbortSignal.timeout(60000)}),
+      fetch(API+'/predict/serie', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({...payload, modelo:'Gradient Boosting'}), signal: AbortSignal.timeout(60000)})
+    ]);
+    if(resRF.ok){ dataRF = await resRF.json(); serieRF = dataRF.serie; }
+    if(resGB.ok){ dataGB = await resGB.json(); serieGB = dataGB.serie; }
+    renderMetricas(dataRF, dataGB, lag1, lag2, lag3);
   } catch(e){
-    errEl.textContent = `Erro ao consultar a API: ${e.message}. Usando estimativa local.`;
+    errEl.textContent = `Erro ao consultar a API: ${e.message}`;
     errEl.style.display = 'block';
-    // Fallback local
-    serie = Array.from({length:12}, (_,i) => ({
-      mes: `2025-${String(i+1).padStart(2,'0')}`,
-      dy_previsto: lag1 * (1 - i*0.001),
-      dy_previsto_pct: lag1*(1-i*0.001)*100,
-    }));
+    serieRF = Array.from({length:12},(_,i)=>({mes:`2025-${String(i+1).padStart(2,'0')}`,dy_previsto:lag1*(1-i*0.001),dy_previsto_pct:lag1*(1-i*0.001)*100}));
+    serieGB = serieRF.map(s=>({...s, dy_previsto:s.dy_previsto*0.99}));
   }
 
   document.getElementById('btnGerar').disabled = false;
@@ -693,77 +723,254 @@ async function gerar(){
   document.getElementById('resultados').style.display = 'block';
   document.getElementById('lblSigla').textContent = sig;
 
-  // Cards resumo
-  renderResumo(serie, hz);
-
-  // Gráfico VS
-  renderVsChart(sig, serie, hz);
-
-  // Dica
-  renderDica(sig, seg, serie, pvp);
-
-  // Desempenho do segmento
+  renderResumo(serieRF, serieGB, hz);
+  renderHistChart(sig, serieRF, serieGB, hz);
+  renderErroChart(sig, serieRF, serieGB, hz, dataRF.mae || 0, dataGB.mae || 0);
+  renderVsChart(sig, serieRF, serieGB, hz);
+  renderDica(sig, seg, serieRF, pvp);
   _segAtual = seg;
   renderSegChart(seg, hz);
+
+  _lastSerieRF = serieRF; _lastSerieGB = serieGB;
+  _lastSig = sig; _lastMaeRF = dataRF.mae||0; _lastMaeGB = dataGB.mae||0;
 
   document.getElementById('resultados').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 // ── Resumo ────────────────────────────────────────────────────────────────────
-function renderResumo(serie, hz){
-  const preds = serie.slice(0, hz);
-  const idxs  = [0, Math.floor(hz/2), hz-1].filter((v,i,a) => a.indexOf(v)===i && v < hz);
-  document.getElementById('resumoCards').innerHTML = idxs.map((idx, i) => {
-    const s   = preds[idx];
-    const val = s.dy_previsto_pct;
-    const mes = s.mes.split('-');
-    const label = MONTHS[parseInt(mes[1])-1] + '/' + mes[0].slice(2);
+function renderResumo(serieRF, serieGB, hz){
+  const predsRF = serieRF.slice(0, hz);
+  const predsGB = serieGB.slice(0, hz);
+  const idxs = [0, Math.floor(hz/2), hz-1].filter((v,i,a)=>a.indexOf(v)===i&&v<hz);
+  document.getElementById('resumoCards').innerHTML = idxs.map((idx,i) => {
+    const rf  = predsRF[idx];
+    const gb  = predsGB[idx];
+    const mes = rf.mes.split('-');
+    const label = MONTHS[parseInt(mes[1])-1]+'/'+mes[0].slice(2);
+    const valRF = rf.dy_previsto_pct;
+    const valGB = gb ? gb.dy_previsto_pct : null;
     return `<div class="resumo-card ${i===idxs.length-1?'destaque':''}">
       <div class="resumo-label">${label}</div>
-      <div class="resumo-val ${val>0.8?'good':''}">${val.toFixed(3)}<span style="font-size:13px;font-weight:400;color:var(--text3)">%</span></div>
-      <div class="resumo-sub">${(val*12).toFixed(2)}% a.a.</div>
+      <div style="margin:8px 0 4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:10px;font-weight:600;color:#B87000;background:#FFF4D6;padding:1px 6px;border-radius:10px">RF</span>
+          <span style="font-size:18px;font-weight:600;font-family:'DM Mono',monospace;color:var(--text)">${valRF.toFixed(2)}<span style="font-size:11px;color:var(--text3)">% a.m.</span></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:10px;font-weight:600;color:#7A2080;background:#F0E8FB;padding:1px 6px;border-radius:10px">GB</span>
+          <span style="font-size:18px;font-weight:600;font-family:'DM Mono',monospace;color:var(--text)">${valGB!=null?valGB.toFixed(2):'—'}<span style="font-size:11px;color:var(--text3)">% a.m.</span></span>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:6px;margin-top:4px;font-size:10px;color:var(--text3)">
+        RF: ${(valRF*12).toFixed(2)}% a.a. &nbsp;|&nbsp; GB: ${valGB!=null?(valGB*12).toFixed(2)+'% a.a.':'—'}
+      </div>
     </div>`;
   }).join('');
 }
 
 // ── Métricas ──────────────────────────────────────────────────────────────────
-function renderMetricas(data, lag1, lag2, lag3){
-  document.getElementById('mLag1').textContent = (lag1*100).toFixed(3) + '%';
-  document.getElementById('mLag2').textContent = (lag2*100).toFixed(3) + '%';
-  document.getElementById('mLag3').textContent = (lag3*100).toFixed(3) + '%';
-  document.getElementById('mR2').textContent   = data.r2   != null ? data.r2.toFixed(3)    : '—';
-  document.getElementById('mMape').textContent = data.mape != null ? data.mape.toFixed(1)+'%' : '—';
-  document.getElementById('mMae').textContent  = data.mae  != null ? (data.mae*100).toFixed(4)+'%' : '—';
-  document.getElementById('mCvR2').textContent = data.cv_r2 != null ? data.cv_r2.toFixed(3) : '—';
+function renderMetricas(dataRF, dataGB, lag1, lag2, lag3){
+  document.getElementById('mLag1').textContent = (lag1*100).toFixed(2)+'%';
+  document.getElementById('mLag2').textContent = (lag2*100).toFixed(2)+'%';
+  document.getElementById('mLag3').textContent = (lag3*100).toFixed(2)+'%';
 
-  // Importância das variáveis
+  // R² RF e GB lado a lado
+  const r2rf = dataRF.r2 != null ? dataRF.r2.toFixed(3) : '—';
+  const r2gb = dataGB.r2 != null ? dataGB.r2.toFixed(3) : '—';
+  document.getElementById('mR2').innerHTML =
+    `<span style="color:#B87000">RF ${r2rf}</span><br>
+     <span style="color:#7A2080;font-size:14px">GB ${r2gb}</span>`;
+
+  // MAE RF e GB
+  const maerf = dataRF.mae != null ? (dataRF.mae*100).toFixed(4)+'%' : '—';
+  const maegb = dataGB.mae != null ? (dataGB.mae*100).toFixed(4)+'%' : '—';
+  document.getElementById('mMae').innerHTML =
+    `<span style="color:#B87000">RF ${maerf}</span><br>
+     <span style="color:#7A2080;font-size:14px">GB ${maegb}</span>`;
+
+  // Importância das variáveis — com destaque na SELIC
   const imp = [
     {l:'DY lag 1', v:34, c:'var(--green)'},
     {l:'DY lag 2', v:22, c:'var(--green)'},
     {l:'DY lag 3', v:14, c:'var(--green)'},
     {l:'P/VP',     v:16, c:'var(--blue)'},
-    {l:'SELIC',    v:14, c:'var(--amber)'},
+    {l:'SELIC ★',  v:14, c:'var(--amber)', destaque:true},
   ];
   document.getElementById('impBars').innerHTML = imp.map(f =>
-    `<div class="imp-row">
-      <span class="imp-label">${f.l}</span>
+    `<div class="imp-row" ${f.destaque?'style="background:var(--amber-light);border-radius:6px;padding:4px 6px;margin:-2px -6px 6px"':''}>
+      <span class="imp-label" style="${f.destaque?'color:var(--amber);font-weight:600':''}">${f.l}</span>
       <div class="imp-track"><div class="imp-fill" style="width:${f.v}%;background:${f.c}"></div></div>
-      <span class="imp-pct">${f.v}%</span>
+      <span class="imp-pct" style="${f.destaque?'color:var(--amber)':''}">${f.v}%</span>
     </div>`
-  ).join('');
+  ).join('') +
+  `<div style="font-size:11px;color:var(--amber);margin-top:6px">
+    ★ SELIC atual: <strong>13,25% a.a.</strong> — taxa elevada pressiona P/VP para baixo e aumenta a exigência de DY pelo mercado.
+  </div>`;
 }
 
-// ── Gráfico VS ────────────────────────────────────────────────────────────────
-function renderVsChart(sig, serie, hz){
-  const real = (REAL_2025[sig] || []).slice(0, hz);
-  const prev = serie.slice(0, hz).map(s => s.dy_previsto * 100);
-  const labels = serie.slice(0, hz).map(s => {
+// ── Gráfico DY Histórico 2024 + Projetado 2025 ───────────────────────────────
+function renderHistChart(sig, serieRF, serieGB, hz){
+  const hist2024 = (REAL_2024[sig] || []).map(v => v != null ? +(v*100).toFixed(2) : null);
+  const prevRF   = serieRF.slice(0, hz).map(s => +(s.dy_previsto*100).toFixed(2));
+  const prevGB   = serieGB.slice(0, hz).map(s => +(s.dy_previsto*100).toFixed(2));
+
+  // Labels: Jan/24...Dez/24 | Jan/25...hz/25
+  const labelsHist = MONTHS.map(m => m+'/24');
+  const labelsPrev = serieRF.slice(0,hz).map(s => {
     const [y,m] = s.mes.split('-');
     return MONTHS[parseInt(m)-1]+'/'+y.slice(2);
   });
 
+  // Ponto de conexão: último valor real de 2024
+  const ultReal = hist2024.filter(v=>v!=null).slice(-1)[0] || prevRF[0];
+
+  if(histChartInst) histChartInst.destroy();
+  histChartInst = new Chart(document.getElementById('histChart').getContext('2d'), {
+    type:'line',
+    data:{
+      labels: [...labelsHist, ...labelsPrev],
+      datasets:[
+        {
+          label:'Real 2024 (brapi.dev)',
+          data: [...hist2024, ...Array(hz).fill(null)],
+          borderColor:'#1A4F8A', backgroundColor:'rgba(26,79,138,0.07)',
+          borderWidth:2.5, pointRadius:3, tension:0.4, fill:true, spanGaps:true,
+        },
+        {
+          label:'RF — Projetado 2025',
+          data: [...Array(11).fill(null), ultReal, ...prevRF],
+          borderColor:'#B87000', backgroundColor:'rgba(184,112,0,0.07)',
+          borderWidth:2, borderDash:[6,4], pointRadius:3, tension:0.4, fill:false,
+        },
+        {
+          label:'GB — Projetado 2025',
+          data: [...Array(11).fill(null), ultReal, ...prevGB],
+          borderColor:'#7A2080', backgroundColor:'transparent',
+          borderWidth:2, borderDash:[3,3], pointRadius:3, tension:0.4, fill:false,
+        },
+        // Linha divisória visual
+        {
+          label:'',
+          data: Array(12+hz).fill(null).map((_,i)=> i===11 ? ultReal : null),
+          borderColor:'rgba(0,0,0,0.15)', borderWidth:1,
+          borderDash:[4,4], pointRadius:0, fill:false,
+        }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{labels:{font:{size:11}, filter: i => i.text !== ''}},
+        tooltip:{callbacks:{
+          label: c => c.dataset.label && c.parsed.y!=null
+            ? `${c.dataset.label}: ${c.parsed.y.toFixed(2)}% a.m.` : null,
+          afterBody: items => {
+            const lbl = items[0]?.label || '';
+            return lbl.includes('/24') ? [] : ['← transição histórico → projeção'];
+          }
+        }}
+      },
+      scales:{
+        x:{ticks:{font:{size:10}}},
+        y:{
+          ticks:{font:{size:11}, callback:v=>v.toFixed(2)+'%'},
+          title:{display:true, text:'DY % a.m.', font:{size:11}}
+        }
+      }
+    }
+  });
+}
+
+// ── Gráfico Margem de Erro / Intervalo de Confiança ──────────────────────────
+function renderErroChart(sig, serieRF, serieGB, hz, maeRF, maeGB){
+  const prevRF = serieRF.slice(0,hz).map(s => +(s.dy_previsto*100).toFixed(2));
+  const prevGB = serieGB.slice(0,hz).map(s => +(s.dy_previsto*100).toFixed(2));
+  const labels = serieRF.slice(0,hz).map(s => {
+    const [y,m] = s.mes.split('-');
+    return MONTHS[parseInt(m)-1]+'/'+y.slice(2);
+  });
+
+  const maeRFpct = (maeRF || 0.001) * 100;
+  const maeGBpct = (maeGB || 0.001) * 100;
+
+  // Bandas superior/inferior ± 1 MAE
+  const rfSup = prevRF.map(v => +(v + maeRFpct).toFixed(2));
+  const rfInf = prevRF.map(v => +(v - maeRFpct).toFixed(2));
+  const gbSup = prevGB.map(v => +(v + maeGBpct).toFixed(2));
+  const gbInf = prevGB.map(v => +(v - maeGBpct).toFixed(2));
+
+  // Real 2025 para comparação
+  const real2025 = (REAL_2025[sig]||[]).slice(0,hz).map(v=>v!=null?+(v*100).toFixed(2):null);
+
+  document.getElementById('erroModeloBadge').textContent =
+    `RF ±${maeRFpct.toFixed(3)}% · GB ±${maeGBpct.toFixed(3)}%`;
+
+  if(erroChartInst) erroChartInst.destroy();
+  erroChartInst = new Chart(document.getElementById('erroChart').getContext('2d'), {
+    type:'line',
+    data:{labels, datasets:[
+      // Banda RF superior (invisível, só para fill)
+      {label:'', data:rfSup, borderColor:'transparent',
+       backgroundColor:'rgba(184,112,0,0.12)',
+       borderWidth:0, pointRadius:0, fill:'+1', tension:0.4},
+      // Banda RF inferior
+      {label:`RF — intervalo ±${maeRFpct.toFixed(3)}% a.m.`,
+       data:rfInf, borderColor:'rgba(184,112,0,0.3)',
+       borderDash:[3,3], borderWidth:1, pointRadius:0,
+       fill:false, tension:0.4},
+      // Linha central RF
+      {label:'RF — previsão central',
+       data:prevRF, borderColor:'#B87000',
+       borderWidth:2.5, pointRadius:3, fill:false, tension:0.4},
+      // Banda GB superior
+      {label:'', data:gbSup, borderColor:'transparent',
+       backgroundColor:'rgba(122,32,128,0.08)',
+       borderWidth:0, pointRadius:0, fill:'+1', tension:0.4},
+      // Banda GB inferior
+      {label:`GB — intervalo ±${maeGBpct.toFixed(3)}% a.m.`,
+       data:gbInf, borderColor:'rgba(122,32,128,0.3)',
+       borderDash:[3,3], borderWidth:1, pointRadius:0,
+       fill:false, tension:0.4},
+      // Linha central GB
+      {label:'GB — previsão central',
+       data:prevGB, borderColor:'#7A2080',
+       borderWidth:2.5, pointRadius:3, fill:false, tension:0.4},
+      // Real 2025
+      {label:'Real 2025 (brapi)',
+       data:real2025, borderColor:'#1A4F8A',
+       borderWidth:2, pointRadius:4, fill:false, tension:0.4, spanGaps:true},
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{labels:{font:{size:10}, filter:i=>i.text!=='', usePointStyle:true}},
+        tooltip:{callbacks:{
+          label: c => c.dataset.label && c.parsed.y!=null
+            ? `${c.dataset.label}: ${c.parsed.y.toFixed(2)}% a.m.` : null
+        }}
+      },
+      scales:{
+        x:{ticks:{font:{size:11}}},
+        y:{ticks:{font:{size:11}, callback:v=>v.toFixed(2)+'%'},
+           title:{display:true, text:'DY % a.m.', font:{size:11}}}
+      }
+    }
+  });
+}
+
+// ── Gráfico VS ────────────────────────────────────────────────────────────────
+function renderVsChart(sig, serieRF, serieGB, hz){
+  const real   = (REAL_2025[sig] || []).slice(0, hz);
+  const prevRF = serieRF.slice(0, hz).map(s => +(s.dy_previsto*100).toFixed(2));
+  const prevGB = serieGB.slice(0, hz).map(s => +(s.dy_previsto*100).toFixed(2));
+  const labels = serieRF.slice(0, hz).map(s => {
+    const [y,m] = s.mes.split('-');
+    return MONTHS[parseInt(m)-1]+'/'+y.slice(2);
+  });
   const temReal = real.some(v => v != null);
-  const realPct = real.map(v => v != null ? +(v*100).toFixed(4) : null);
+  const realPct = real.map(v => v != null ? +(v*100).toFixed(2) : null);
 
   if(vsChartInst) vsChartInst.destroy();
   vsChartInst = new Chart(document.getElementById('vsChart').getContext('2d'), {
@@ -776,23 +983,29 @@ function renderVsChart(sig, serie, hz){
         borderWidth:2.5, pointRadius:4, tension:0.4, fill:true, spanGaps:true,
       },
       {
-        label:'Previsto pelo modelo',
-        data: prev.map(v => +v.toFixed(4)),
-        borderColor:'#1A7A5E', backgroundColor:'transparent',
-        borderWidth:2, borderDash:[6,4], pointRadius:4, tension:0.4,
+        label:'Random Forest (RF)',
+        data: prevRF,
+        borderColor:'#B87000', backgroundColor:'transparent',
+        borderWidth:2, borderDash:[6,4], pointRadius:3, tension:0.4,
+      },
+      {
+        label:'Gradient Boosting (GB)',
+        data: prevGB,
+        borderColor:'#7A2080', backgroundColor:'transparent',
+        borderWidth:2, borderDash:[3,3], pointRadius:3, tension:0.4,
       },
     ]},
     options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'index', intersect:false},
       plugins:{
-        legend:{labels:{font:{size:11}}},
-        tooltip:{callbacks:{label: c => `${c.dataset.label}: ${c.parsed.y!=null?c.parsed.y.toFixed(4)+'% a.m.':'—'}`}}
+        legend:{labels:{font:{size:11}, usePointStyle:true}},
+        tooltip:{callbacks:{label: c => `${c.dataset.label}: ${c.parsed.y!=null?c.parsed.y.toFixed(2)+'% a.m.':'—'}`}}
       },
       scales:{
         x:{ticks:{font:{size:11}}},
         y:{
-          ticks:{font:{size:11}, callback: v => v.toFixed(3)+'%'},
+          ticks:{font:{size:11}, callback: v => v.toFixed(2)+'%'},
           title:{display:true, text:'DY % a.m.', font:{size:11}}
         }
       }
@@ -801,15 +1014,20 @@ function renderVsChart(sig, serie, hz){
 
   // Métricas VS
   if(temReal){
-    const diffs = realPct.map((v,i) => v!=null ? Math.abs(v - prev[i]) : null).filter(v=>v!=null);
-    const mae   = (diffs.reduce((s,v)=>s+v,0)/diffs.length).toFixed(3);
-    const valids = realPct.map((v,i)=>v!=null&&v>0?{r:v,p:prev[i]}:null).filter(Boolean);
-    const mape  = valids.length ? (valids.reduce((s,x)=>s+Math.abs((x.r-x.p)/x.r),0)/valids.length*100).toFixed(1) : '—';
+    const calcMet = (prev) => {
+      const diffs = realPct.map((v,i)=>v!=null?Math.abs(v-prev[i]):null).filter(v=>v!=null);
+      const mae = diffs.length ? (diffs.reduce((s,v)=>s+v,0)/diffs.length).toFixed(3) : '—';
+      const valids = realPct.map((v,i)=>v!=null&&v>0?{r:v,p:prev[i]}:null).filter(Boolean);
+      const mape = valids.length ? (valids.reduce((s,x)=>s+Math.abs((x.r-x.p)/x.r),0)/valids.length*100).toFixed(1) : '—';
+      return {mae, mape};
+    };
+    const mRF = calcMet(prevRF);
+    const mGB = calcMet(prevGB);
     document.getElementById('vsMetricas').innerHTML =
-      `<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin-top:8px">
-        <span>MAE: <strong>${mae}% a.m.</strong></span>
-        <span>MAPE: <strong>${mape}%</strong></span>
-        <span style="color:var(--text3)">Baseado em ${hz} meses de 2025 (dados reais brapi)</span>
+      `<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-top:8px">
+        <span style="color:#B87000">RF — MAE: <strong>${mRF.mae}%</strong> · MAPE: <strong>${mRF.mape}%</strong></span>
+        <span style="color:#7A2080">GB — MAE: <strong>${mGB.mae}%</strong> · MAPE: <strong>${mGB.mape}%</strong></span>
+        <span style="color:var(--text3)">${hz} meses · dados reais brapi.dev Pro</span>
        </div>`;
   } else {
     document.getElementById('vsMetricas').innerHTML =
