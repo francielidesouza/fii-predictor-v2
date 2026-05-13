@@ -364,8 +364,9 @@ footer{
         <div class="card-title" style="margin:0">DY Histórico (2024) + Projeção</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <span class="tag tag-real">Real 2024 (brapi)</span>
-          <span class="tag" style="background:#FFF4D6;color:#7A5000">RF — Projetado</span>
+          <span class="tag" style="background:#E8F5F0;color:#0F5240">RF — Projetado</span>
           <span class="tag" style="background:#F0E8FB;color:#5A2A8A">GB — Projetado</span>
+          <span class="tag" style="background:#FDE8D8;color:#A03000">SELIC</span>
         </div>
       </div>
       <p style="font-size:11px;color:var(--text3);margin-bottom:6px">
@@ -394,8 +395,9 @@ footer{
         <div class="card-title" style="margin:0">Real 2025 vs Previsão do Modelo — Validação</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <span class="tag tag-real">Real 2025 (brapi)</span>
-          <span class="tag tag-prev">RF — Random Forest</span>
+          <span class="tag" style="background:#E8F5F0;color:#0F5240">RF — Random Forest</span>
           <span class="tag" style="background:#F0E8FB;color:#5A2A8A">GB — Gradient Boosting</span>
+          <span class="tag" style="background:#FDE8D8;color:#A03000">SELIC</span>
         </div>
       </div>
       <p style="font-size:11px;color:var(--text3);margin-bottom:6px">
@@ -482,7 +484,7 @@ footer{
 </div>
 
 <script>
-const API    = 'https://fii-predictor.onrender.com';
+const API    = 'https://fii-predictor-v2.onrender.com';
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 const CORES_SEG = [
@@ -751,7 +753,7 @@ function renderResumo(serieRF, serieGB, hz){
       <div class="resumo-label">${label}</div>
       <div style="margin:8px 0 4px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-size:10px;font-weight:600;color:#B87000;background:#FFF4D6;padding:1px 6px;border-radius:10px">RF</span>
+          <span style="font-size:10px;font-weight:600;color:#0F5240;background:#E8F5F0;padding:1px 6px;border-radius:10px">RF</span>
           <span style="font-size:18px;font-weight:600;font-family:'DM Mono',monospace;color:var(--text)">${valRF.toFixed(2)}<span style="font-size:11px;color:var(--text3)">% a.m.</span></span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -776,14 +778,14 @@ function renderMetricas(dataRF, dataGB, lag1, lag2, lag3){
   const r2rf = dataRF.r2 != null ? dataRF.r2.toFixed(3) : '—';
   const r2gb = dataGB.r2 != null ? dataGB.r2.toFixed(3) : '—';
   document.getElementById('mR2').innerHTML =
-    `<span style="color:#B87000">RF ${r2rf}</span><br>
+    `<span style="color:#1A7A5E">RF ${r2rf}</span><br>
      <span style="color:#7A2080;font-size:14px">GB ${r2gb}</span>`;
 
   // MAE RF e GB
   const maerf = dataRF.mae != null ? (dataRF.mae*100).toFixed(4)+'%' : '—';
   const maegb = dataGB.mae != null ? (dataGB.mae*100).toFixed(4)+'%' : '—';
   document.getElementById('mMae').innerHTML =
-    `<span style="color:#B87000">RF ${maerf}</span><br>
+    `<span style="color:#1A7A5E">RF ${maerf}</span><br>
      <span style="color:#7A2080;font-size:14px">GB ${maegb}</span>`;
 
   // Importância das variáveis — com destaque na SELIC
@@ -837,7 +839,7 @@ function renderHistChart(sig, serieRF, serieGB, hz){
         {
           label:'RF — Projetado 2025',
           data: [...Array(11).fill(null), ultReal, ...prevRF],
-          borderColor:'#B87000', backgroundColor:'rgba(184,112,0,0.07)',
+          borderColor:'#1A7A5E', backgroundColor:'rgba(26,122,94,0.07)',
           borderWidth:2, borderDash:[6,4], pointRadius:3, tension:0.4, fill:false,
         },
         {
@@ -937,7 +939,7 @@ function renderErroChart(sig, serieRF, serieGB, hz, maeRF, maeGB){
        fill:false, tension:0.4},
       // Linha central RF
       {label:'RF — previsão central',
-       data:prevRF, borderColor:'#B87000',
+       data:prevRF, borderColor:'#1A7A5E',
        borderWidth:2.5, pointRadius:3, fill:false, tension:0.4},
       // Banda GB superior
       {label:'', data:gbSup, borderColor:'transparent',
@@ -1001,7 +1003,7 @@ function renderVsChart(sig, serieRF, serieGB, hz){
       {
         label:'Random Forest (RF)',
         data: prevRF,
-        borderColor:'#B87000', backgroundColor:'transparent',
+        borderColor:'#1A7A5E', backgroundColor:'transparent',
         borderWidth:2, borderDash:[6,4], pointRadius:3, tension:0.4,
       },
       {
@@ -1060,7 +1062,7 @@ function renderVsChart(sig, serieRF, serieGB, hz){
     const mGB = calcMet(prevGB);
     document.getElementById('vsMetricas').innerHTML =
       `<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-top:8px">
-        <span style="color:#B87000">RF — MAE: <strong>${mRF.mae}%</strong> · MAPE: <strong>${mRF.mape}%</strong></span>
+        <span style="color:#1A7A5E">RF — MAE: <strong>${mRF.mae}%</strong> · MAPE: <strong>${mRF.mape}%</strong></span>
         <span style="color:#7A2080">GB — MAE: <strong>${mGB.mae}%</strong> · MAPE: <strong>${mGB.mape}%</strong></span>
         <span style="color:var(--text3)">${hz} meses · dados reais brapi.dev Pro</span>
        </div>`;
